@@ -9,10 +9,11 @@ export type HealthOptions = {
 
 function parseRequiredServices(input?: string): string[] {
   if (!input) return [];
-  return input
+  const parsed = input
     .split(',')
     .map((v) => v.trim())
     .filter(Boolean);
+  return [...new Set(parsed)];
 }
 
 export async function runHealth(options: HealthOptions): Promise<void> {
@@ -91,6 +92,30 @@ export async function runHealth(options: HealthOptions): Promise<void> {
   }
 
   const services = payload.services ?? {};
+  const availableServiceNames = new Set(Object.keys(services));
+  const unknownRequired = required.filter((name) => !availableServiceNames.has(name));
+
+  if (unknownRequired.length > 0) {
+    const available = [...availableServiceNames].sort();
+    if (options.json) {
+      console.log(
+        JSON.stringify({
+          ok: false,
+          reason: 'invalid_required_services',
+          unknownRequired,
+          availableServices: available,
+        }),
+      );
+    } else {
+      warn(
+        `Unknown required services: ${unknownRequired.join(', ')}. ` +
+        `Available: ${available.length > 0 ? available.join(', ') : 'none'}`,
+      );
+    }
+    process.exitCode = 1;
+    return;
+  }
+
   const missingOrDown = required.filter((name) => (services[name]?.status ?? 'unknown') !== 'up');
 
   if (missingOrDown.length > 0) {
