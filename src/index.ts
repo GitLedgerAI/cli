@@ -16,7 +16,9 @@ program
   .description('Check GitLedger backend health')
   .option('--api-url <url>', 'Override backend API URL')
   .option('--json', 'Output raw JSON response')
-  .action(async (opts: { apiUrl?: string; json?: boolean }) => {
+  .option('--require-services <list>', 'Comma-separated list of services that must be up (e.g. postgres,redis,github,baseRpc)')
+  .option('--timeout-ms <ms>', 'Request timeout in milliseconds (default: 8000)')
+  .action(async (opts: { apiUrl?: string; json?: boolean; requireServices?: string; timeoutMs?: string }) => {
     await runHealth(opts);
   });
 
